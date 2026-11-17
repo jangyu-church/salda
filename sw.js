@@ -1,5 +1,6 @@
-// 살다보면 — 앱 껍데기를 폰에 저장해 빨리 열리게 합니다. 기록 서버 요청은 건드리지 않습니다.
-const CACHE = 'salda-v4';
+// 살다보면 — 화면 파일은 늘 새것을 먼저 받고, 인터넷이 안 될 때만 저장본을 씁니다.
+// (그래서 GitHub에 새 화면을 올리면 다음에 열 때 바로 바뀝니다)
+const CACHE = 'salda-v5';
 const SHELL = ['./', 'index.html', 'config.js', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -14,16 +15,10 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
-  // 저장해 둔 것을 먼저 보여 주고, 뒤에서 새 것을 받아 다음에 반영
   e.respondWith(
-    caches.open(CACHE).then(cache =>
-      cache.match(e.request).then(hit => {
-        const net = fetch(e.request).then(res => {
-          if (res.ok) cache.put(e.request, res.clone());
-          return res;
-        }).catch(() => hit);
-        return hit || net;
-      })
-    )
+    fetch(e.request, { cache: 'no-cache' }).then(res => {
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
+      return res;
+    }).catch(() => caches.match(e.request).then(hit => hit || caches.match('index.html')))
   );
 });
