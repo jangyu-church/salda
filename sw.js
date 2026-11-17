@@ -1,5 +1,5 @@
 // 살다보면 — 앱 껍데기를 폰에 저장해 빨리 열리게 합니다. 기록 서버 요청은 건드리지 않습니다.
-const CACHE = 'salda-v3';
+const CACHE = 'salda-v4';
 const SHELL = ['./', 'index.html', 'config.js', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {

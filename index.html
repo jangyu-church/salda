@@ -153,6 +153,23 @@ nav.tabs button.on{color:var(--pri)}
 ol.guide{padding-left:1.2em;margin:8px 0}
 ol.guide li{margin:6px 0}
 .empty{text-align:center;color:var(--sub);padding:18px 0}
+/* 관리 화면 */
+.aseg{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.aseg button{flex:1 1 30%;min-height:44px;border-radius:12px;background:var(--card);border:2px solid var(--line);font-weight:700;font-size:.92rem}
+.aseg button.on{border-color:var(--pri);color:var(--pri);background:var(--soft)}
+.alist div.ai{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line)}
+.alist div.ai:first-child{border-top:0}
+.alist .tx{flex:1;min-width:0}
+.alist .tx small{display:block;color:var(--sub);font-size:.82rem}
+.del{min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:.85rem;font-weight:700;color:#DC2626;white-space:nowrap}
+.del.sure{background:#DC2626;color:#fff;border-color:#DC2626}
+.del:disabled{color:var(--sub)}
+.dtag{display:inline-block;font-size:.75rem;font-weight:800;color:#fff;background:var(--pri);border-radius:6px;padding:1px 7px;margin-right:6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{width:46px;height:46px;border-radius:50%;border:2px solid var(--line);font-weight:800;background:var(--card)}
+.chips button.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.prev7 div{display:flex;gap:10px;padding:5px 0;font-size:.95rem}
+.prev7 div span:first-child{width:84px;color:var(--sub);flex:none}
 </style>
 </head>
 <body>
@@ -162,6 +179,7 @@ ol.guide li{margin:6px 0}
   <button data-tab="group"><span>🏡</span>우리 목장</button>
   <button data-tab="church"><span>⛪</span>온 교회</button>
   <button data-tab="cheer"><span>💌</span>응원</button>
+  <button data-tab="admin" id="tab-admin" hidden><span>🛠️</span>관리</button>
 </div></nav>
 <div id="modal"></div>
 <script src="config.js"></script>
@@ -220,7 +238,8 @@ var S={
   prefs:store.get('sal_prefs',{theme:'auto',size:'normal',installHide:false}),
   reroll:store.get('sal_reroll',{}), custom:store.get('sal_custom',{}),
   tab:'today', date:fmt(new Date()), by:{}, period:'week', moreW:false, moreM:false,
-  noticeOpen:false, groups:[], busy:false, lastSync:0, deferred:null, drafts:{}, edit:{}
+  noticeOpen:false, groups:[], busy:false, lastSync:0, deferred:null, drafts:{}, edit:{},
+  admin:null, admSec:'mission', admCat:'큐티', mDated:false, svcMode:'week', svcDays:{}, confirm:null
 };
 function today(){return fmt(new Date())}
 function weekOf(d){return addDays(d,-parse(d).getDay())}
@@ -248,7 +267,10 @@ function cleanLocal(){
 function reading(d){return (S.data.readings||[]).find(function(r){return r[0]===d})}
 function planFor(d){
   var r=reading(d);if(r&&r[1])return r[1];
-  var p=S.data.plan||{};if(!p.start||d<p.start)return '';
+  return planCalc(S.data.plan||{},d);
+}
+function planCalc(p,d){
+  if(!p.start||d<p.start)return '';
   var per=Math.max(1,Math.min(20,+p.per||3));
   var bi=Math.max(0,BOOKS.findIndex(function(b){return b[0]===String(p.book||'').trim()}));
   var off=0;for(var i=0;i<bi;i++)off+=BOOKS[i][1];
@@ -294,7 +316,8 @@ function sync(quiet){
   S.busy=true;
   return api('state',auth()).then(function(j){
     S.data={notice:j.notice,groups:j.groups,members:j.members,recs:j.recs,cheers:j.cheers,
-      missions:j.missions,readings:j.readings,services:j.services,plan:j.plan};
+      missions:j.missions,readings:j.readings,services:j.services,plan:j.plan,isAdmin:!!j.isAdmin,hasAdmin:!!j.hasAdmin};
+    if(!S.data.isAdmin){S.admin=null;if(S.tab==='admin')S.tab='today'}
     store.set('sal_cache2',S.data);S.lastSync=Date.now();index();render();
   }).catch(function(e){
     if(e.code==='auth'){logout();toast('다시 등록해 주세요');return}
@@ -359,6 +382,7 @@ function render(){
   var app=$('#app'),tabs=$('#tabs');
   if(!S.me){tabs.hidden=true;app.innerHTML=viewJoin();return}
   tabs.hidden=false;
+  $('#tab-admin').hidden=!(S.data&&S.data.isAdmin);
   Array.prototype.forEach.call(tabs.querySelectorAll('button'),function(b){b.classList.toggle('on',b.dataset.tab===S.tab)});
   var head='<header class="top"><div class="brand">살다보면</div><div>'+
     '<button class="icon-btn" data-act="refresh" aria-label="새로 고침">🔄</button> '+
