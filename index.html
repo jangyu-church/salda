@@ -182,6 +182,8 @@ var IT={};ITEMS.forEach(function(x){IT[x.k]=x});
 var CAT={'큐티':'qt','전도':'evangel','나눔':'share'};
 var DOW='일월화수목금토';
 var EV_DAY_MAX=3;
+/* 목장별 현황 비교에서 빼는 이름 (개인 순위·응원에는 그대로 함께합니다) */
+var NOT_GROUP=['교역자','아직 목장 없음'];
 
 /* 시트에 미션이 없을 때 쓰는 기본 미션 */
 var DEF={
@@ -559,7 +561,7 @@ function viewChurch(){
     var mem=S.data.members.filter(function(m){return m[2]===g});
     var sum=mem.reduce(function(a,m){return a+pts(m[0],from,t)},0);
     return {g:g,n:mem.length,sum:sum,avg:mem.length?sum/mem.length:0};
-  }).filter(function(x){return x.n>0});
+  }).filter(function(x){return x.n>0&&NOT_GROUP.indexOf(x.g)<0});
   gs.sort(function(a,b){return b.avg-a.avg});
   var max=Math.max.apply(null,gs.map(function(x){return x.avg}).concat([1]));
   h+='<h2 style="margin-top:18px">목장별 현황</h2>';
